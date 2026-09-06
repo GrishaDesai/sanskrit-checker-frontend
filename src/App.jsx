@@ -63,22 +63,39 @@ export default function App() {
     handleCheck(sampleText);
   }
 
-  const getTokenClass = (status) => {
-    if (status === "valid") return "valid";
-    if (status === "sandhi_error") return "sandhi-issue";
-    if (status === "karaka_error" || status === "upapada_error") return "karaka-issue";
-    if (status === "agreement_error") return "agreement-issue";
+  // A finding's tier comes from the backend's `severity`, never from its
+  // `status` alone. "error" is a confirmed, sutra-citable defect; "review" is
+  // offered for a human decision and must never be styled or worded as an
+  // assertion -- an unrecognised word is very often a valid compound, proper
+  // noun or technical term the lexicon simply does not list.
+  const isReview = (t) => t.severity === "review";
+
+  const getTokenClass = (t) => {
+    if (t.status === "valid") return "valid";
+    if (isReview(t)) return "review";
+    if (t.status === "sandhi_error") return "sandhi-issue";
+    if (t.status === "karaka_error" || t.status === "upapada_error") return "karaka-issue";
+    if (t.status === "agreement_error") return "agreement-issue";
     return "invalid";
   };
 
-  const getStatusLabel = (status) => {
-    switch (status) {
-      case "valid": return "✓ Valid";
+  const getStatusLabel = (t) => {
+    if (t.status === "valid") return "✓ Valid";
+    if (isReview(t)) {
+      switch (t.status) {
+        case "sandhi_error": return "⚪ Sandhi — optional";
+        case "karaka_error":
+        case "upapada_error":
+        case "agreement_error": return "⚪ Review — ambiguous analysis";
+        default: return "⚪ Review — not in lexicon";
+      }
+    }
+    switch (t.status) {
       case "sandhi_error": return "⚠ Sandhi Issue";
-      case "karaka_error": return "⚠ Kāraka Error";
-      case "upapada_error": return "⚠ Upapada Error";
-      case "agreement_error": return "⚠ Agreement Error";
-      default: return "✗ Invalid Form";
+      case "karaka_error": return "🔴 Kāraka Error";
+      case "upapada_error": return "🔴 Upapada Error";
+      case "agreement_error": return "🔴 Agreement Error";
+      default: return "🔴 Invalid Form";
     }
   };
 
@@ -154,6 +171,11 @@ export default function App() {
                     {result.syntax_error_count > 0 && (
                       <span className="badge karaka">{result.syntax_error_count} syntax</span>
                     )}
+                    {result.review_count > 0 && (
+                      <span className="badge review">
+                        {result.review_count} for review
+                      </span>
+                    )}
                     {(result.error_count - result.sandhi_error_count - result.syntax_error_count) > 0 && (
                       <span className="badge bad">
                         {result.error_count - result.sandhi_error_count - result.syntax_error_count} word error(s)
@@ -166,12 +188,12 @@ export default function App() {
               {/* Token list */}
               <ul className="token-list">
                 {result.tokens.map((t, i) => {
-                  const cls = getTokenClass(t.status);
+                  const cls = getTokenClass(t);
                   return (
                     <li key={i} className={cls}>
                       <div className="token-header">
                         <span className="token-text">{t.text}</span>
-                        <span className={`status-tag ${cls}`}>{getStatusLabel(t.status)}</span>
+                        <span className={`status-tag ${cls}`}>{getStatusLabel(t)}</span>
                       </div>
 
                       <div className="token-detail">
@@ -192,7 +214,7 @@ export default function App() {
                         )}
 
                         {t.status === "sandhi_error" && (
-                          <div className="diag-box sandhi-box">
+                          <div className={`diag-box ${isReview(t) ? "review-box" : "sandhi-box"}`}>
                             {t.suggestion && (
                               <div className="sug-line">
                                 <strong>Correct Sandhi Form:</strong>{" "}
@@ -205,7 +227,7 @@ export default function App() {
                         )}
 
                         {(t.status === "karaka_error" || t.status === "upapada_error") && (
-                          <div className="diag-box karaka-box">
+                          <div className={`diag-box ${isReview(t) ? "review-box" : "karaka-box"}`}>
                             {t.suggestion && (
                               <div className="sug-line">
                                 <strong>Correct Case Form:</strong>{" "}
@@ -218,7 +240,7 @@ export default function App() {
                         )}
 
                         {t.status === "agreement_error" && (
-                          <div className="diag-box agreement-box">
+                          <div className={`diag-box ${isReview(t) ? "review-box" : "agreement-box"}`}>
                             {t.suggestion && (
                               <div className="sug-line">
                                 <strong>Correct Verb Form:</strong>{" "}
@@ -231,8 +253,17 @@ export default function App() {
                         )}
 
                         {t.status === "invalid" && (
-                          <div className="diag-box invalid-box">
-                            <div className="error-desc">Not found in Sanskrit lexicon (अशुद्धं पदम्)</div>
+                          <div className={`diag-box ${isReview(t) ? "review-box" : "invalid-box"}`}>
+                            {isReview(t) ? (
+                              <div className="review-desc">
+                                Not listed in the lexicon. Compounds, sandhi-fused
+                                word pairs, proper nouns and technical terms are
+                                frequently absent, so this is offered for your
+                                judgement — it is <strong>not</strong> reported as an error.
+                              </div>
+                            ) : (
+                              <div className="error-desc">Not found in Sanskrit lexicon (अशुद्धं पदम्)</div>
+                            )}
                             {t.suggestion && (
                               <div className="sug-line">
                                 <strong>Suggested Form:</strong>{" "}

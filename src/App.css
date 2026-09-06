@@ -175,6 +175,7 @@ textarea:focus {
 .badge.total   { background: #f1f5f9; color: #334155; }
 .badge.good    { background: #dcfce7; color: #15803d; }
 .badge.warning { background: #fef3c7; color: #b45309; }
+.badge.review  { background: #e2e8f0; color: #334155; }
 .badge.bad     { background: #fee2e2; color: #b91c1c; }
 .badge.karaka  { background: #fce7f3; color: #9d174d; }
 
@@ -199,6 +200,10 @@ textarea:focus {
 .token-list li.karaka-issue    { background: #fff1f2; border-left-color: #e11d48; }
 .token-list li.agreement-issue { background: #fff7ed; border-left-color: #ea580c; }
 .token-list li.invalid         { background: #fef2f2; border-left-color: #ef4444; }
+/* Review tier: offered for a human decision, never asserted as a defect.
+   Deliberately neutral slate -- no red, no warning amber -- so a reader can
+   tell at a glance that nothing is being claimed to be wrong. */
+.token-list li.review          { background: #f8fafc; border-left-color: #94a3b8; }
 
 .token-header {
   display: flex;
@@ -226,6 +231,7 @@ textarea:focus {
 .status-tag.karaka-issue    { background: #fecdd3; color: #9f1239; }
 .status-tag.agreement-issue { background: #fed7aa; color: #7c2d12; }
 .status-tag.invalid         { background: #fecaca; color: #991b1b; }
+.status-tag.review          { background: #e2e8f0; color: #334155; }
 
 /* Diagnostic boxes */
 .diag-box {
@@ -239,6 +245,8 @@ textarea:focus {
 .karaka-box    { background: #ffe4e6; border: 1px solid #fda4af; }
 .agreement-box { background: #ffedd5; border: 1px solid #fdba74; }
 .invalid-box   { background: #fee2e2; border: 1px solid #fca5a5; }
+.review-box    { background: #f1f5f9; border: 1px solid #cbd5e1; }
+.review-desc   { font-size: 13px; color: #475569; line-height: 1.5; }
 
 .sug-line { font-size: 14px; margin-bottom: 5px; }
 
