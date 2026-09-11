@@ -1,5 +1,9 @@
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import "./App.css";
+import { BookPage } from "./components/BookPage";
+import { ExamplesMenu } from "./components/ExamplesMenu";
+import { MarginNotes } from "./components/MarginNotes";
+import { indexSyntaxIssues, isFinding, kindOf, locateTokens } from "./lib/findings";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
@@ -29,302 +33,253 @@ const TAG_LABELS = {
   compound: "Compound",
 };
 
+/** Loudest first, so the margin's tally reads as a triage order. */
+const KIND_ORDER = ["word", "syntax", "sandhi", "review"];
+
 export default function App() {
   const [text, setText] = useState("भगवान् भक्तानाम् रक्षति।");
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(null);
 
-  async function handleCheck(textToCheck = text) {
-    setLoading(true);
-    setError(null);
+  // The proofed page shows the text the *server* saw. Editing after a check
+  // would slide every offset, so any edit drops back to composing rather than
+  // leaving marks sitting on the wrong words.
+  const mode = result ? "proof" : "compose";
+
+  const runCheck = useCallback(
+    async (textToCheck) => {
+      const body = textToCheck ?? text;
+      if (!body.trim()) return;
+      setLoading(true);
+      setError(null);
+      setSelectedIndex(null);
+      try {
+        const res = await fetch(`${API_URL}/api/check`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: body }),
+        });
+        if (!res.ok) {
+          const detail = await res.json().catch(() => ({}));
+          throw new Error(detail.detail || `Request failed (${res.status})`);
+        }
+        setResult(await res.json());
+      } catch (err) {
+        setError(err.message || "Something went wrong reaching the API.");
+        setResult(null);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [text],
+  );
+
+  const editText = useCallback((next) => {
+    setText(next);
     setResult(null);
-    try {
-      const res = await fetch(`${API_URL}/api/check`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: textToCheck }),
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.detail || `Request failed (${res.status})`);
-      }
-      const data = await res.json();
-      setResult(data);
-    } catch (err) {
-      setError(err.message || "Something went wrong reaching the API.");
-    } finally {
-      setLoading(false);
+    setSelectedIndex(null);
+  }, []);
+
+  const pickSample = useCallback(
+    (sampleText) => {
+      setText(sampleText);
+      void runCheck(sampleText);
+    },
+    [runCheck],
+  );
+
+  const placements = useMemo(() => {
+    if (!result) return null;
+    return locateTokens(result.input_text, result.tokens);
+  }, [result]);
+
+  const syntaxIssues = useMemo(() => indexSyntaxIssues(result?.syntax_issues), [result]);
+
+  const findings = useMemo(
+    () => (placements ?? []).filter((p) => isFinding(p.token)),
+    [placements],
+  );
+
+  const tallies = useMemo(() => {
+    const counts = new Map();
+    for (const { token } of findings) {
+      const kind = kindOf(token);
+      counts.set(kind, (counts.get(kind) ?? 0) + 1);
     }
-  }
+    return KIND_ORDER.filter((k) => counts.has(k)).map((kind) => ({
+      kind,
+      count: counts.get(kind),
+    }));
+  }, [findings]);
 
-  function handleSelectSample(sampleText) {
-    setText(sampleText);
-    handleCheck(sampleText);
-  }
+  const step = useCallback(
+    (delta) => {
+      if (findings.length === 0) return;
+      const at = findings.findIndex((f) => f.index === selectedIndex);
+      const next = (at + delta + findings.length) % findings.length;
+      setSelectedIndex(findings[next].index);
+    },
+    [findings, selectedIndex],
+  );
 
-  // A finding's tier comes from the backend's `severity`, never from its
-  // `status` alone. "error" is a confirmed, sutra-citable defect; "review" is
-  // offered for a human decision and must never be styled or worded as an
-  // assertion -- an unrecognised word is very often a valid compound, proper
-  // noun or technical term the lexicon simply does not list.
-  const isReview = (t) => t.severity === "review";
+  /**
+   * Swap a suggested form into the text and check the result.
+   *
+   * Every suggestion the API produces replaces exactly one token -- a sandhi
+   * fix rewrites the first word of the junction, never the pair -- so splicing
+   * at that token's span is the whole edit. The re-check is what keeps the page
+   * in proof mode instead of throwing the author back to a blank editor.
+   */
+  const applySuggestion = useCallback(
+    (placement, replacement) => {
+      const next =
+        result.input_text.slice(0, placement.start) +
+        replacement +
+        result.input_text.slice(placement.end);
+      setText(next);
+      void runCheck(next);
+    },
+    [result, runCheck],
+  );
 
-  const getTokenClass = (t) => {
-    if (t.status === "valid") return "valid";
-    if (isReview(t)) return "review";
-    if (t.status === "sandhi_error") return "sandhi-issue";
-    if (t.status === "karaka_error" || t.status === "upapada_error") return "karaka-issue";
-    if (t.status === "agreement_error") return "agreement-issue";
-    return "invalid";
-  };
+  // Clicking off the page, or pressing Escape, puts the card away.
+  useEffect(() => {
+    if (selectedIndex == null) return undefined;
+    const onDown = (e) => {
+      if (!e.target.closest?.(".popover, .word, .note")) setSelectedIndex(null);
+    };
+    const onKey = (e) => {
+      if (e.key === "Escape") setSelectedIndex(null);
+    };
+    document.addEventListener("pointerdown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [selectedIndex]);
 
-  const getStatusLabel = (t) => {
-    if (t.status === "valid") return "✓ Valid";
-    if (isReview(t)) {
-      switch (t.status) {
-        case "sandhi_error": return "⚪ Sandhi — optional";
-        case "karaka_error":
-        case "upapada_error":
-        case "agreement_error": return "⚪ Review — ambiguous analysis";
-        default: return "⚪ Review — not in lexicon";
-      }
-    }
-    switch (t.status) {
-      case "sandhi_error": return "⚠ Sandhi Issue";
-      case "karaka_error": return "🔴 Kāraka Error";
-      case "upapada_error": return "🔴 Upapada Error";
-      case "agreement_error": return "🔴 Agreement Error";
-      default: return "🔴 Invalid Form";
-    }
-  };
-
-  const totalIssues = result
-    ? result.error_count
-    : 0;
+  const runningHead = useMemo(() => {
+    if (mode === "compose") return { title: "Draft", detail: "Not yet checked" };
+    const words = result.token_count;
+    const n = findings.length;
+    return {
+      title: "Proofed",
+      detail: `${words} word${words === 1 ? "" : "s"} · ${
+        n === 0 ? "nothing marked" : `${n} marked`
+      }`,
+    };
+  }, [mode, result, findings]);
 
   return (
-    <div className="page">
-      <header>
-        <h1>Sanskrit Proof-Checker (संस्कृत-शोधकः)</h1>
-        <p className="subtitle">
-          Phase 1 & 2: Word Validity · Sandhi · Orthography &nbsp;|&nbsp; Phase 3: Kāraka · Agreement · Samāsa
-        </p>
-      </header>
-
-      <div className="sample-bar">
-        <span className="sample-label">Examples:</span>
-        <div className="sample-buttons">
-          {SAMPLE_TEXTS.map((sample, idx) => (
-            <button
-              key={idx}
-              className={`sample-btn ${sample.tag ? `sample-${sample.tag}` : ""}`}
-              onClick={() => handleSelectSample(sample.text)}
-            >
-              {sample.label}
-              {sample.tag && <span className="sample-tag">{TAG_LABELS[sample.tag]}</span>}
-            </button>
-          ))}
+    <div className="desk">
+      <header className="deskbar">
+        <div className="brand">
+          <span lang="sa" className="brand-mark">
+            शो
+          </span>
+          <span className="brand-text">
+            <strong>Sanskrit Proof-Checker</strong>
+            <span lang="sa">संस्कृत-शोधकः</span>
+          </span>
         </div>
-      </div>
 
-      <div className="split">
-        {/* LEFT: input */}
-        <section className="pane">
-          <h2>Input Sanskrit Text (Devanagari)</h2>
-          <textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            rows={7}
-            placeholder="Type Devanagari Sanskrit here, e.g. भगवान् भक्तान् रक्षति।"
-          />
+        <div className="deskbar-actions">
+          <ExamplesMenu samples={SAMPLE_TEXTS} tagLabels={TAG_LABELS} onPick={pickSample} />
+          {mode === "proof" && (
+            <button type="button" className="btn btn-quiet" onClick={() => setResult(null)}>
+              Edit text
+            </button>
+          )}
           <button
-            className="check-btn"
-            onClick={() => handleCheck()}
+            type="button"
+            className="btn btn-primary"
+            onClick={() => void runCheck()}
             disabled={loading || !text.trim()}
           >
-            {loading ? "Checking…" : "Check Sanskrit Text"}
+            {loading ? "Checking…" : mode === "proof" ? "Check again" : "Check"}
           </button>
-          {error && <div className="error-box">⚠ {error}</div>}
+        </div>
+      </header>
+
+      {error && <div className="banner banner-error">⚠ {error}</div>}
+
+      {mode === "proof" && placements === null && (
+        <div className="banner banner-warn">
+          The words could not be located in the text, so nothing is marked on the page.
+          The findings are listed in the margin instead.
+        </div>
+      )}
+
+      <main className="spread">
+        <BookPage
+          text={mode === "proof" ? result.input_text : text}
+          mode={mode}
+          onTextChange={editText}
+          placements={placements}
+          syntaxIssues={syntaxIssues}
+          selectedIndex={selectedIndex}
+          onSelectWord={setSelectedIndex}
+          onApply={applySuggestion}
+          onClose={() => setSelectedIndex(null)}
+          runningHead={runningHead}
+        />
+
+        {mode === "proof" ? (
+          <MarginNotes
+            findings={findings}
+            selectedIndex={selectedIndex}
+            onSelect={setSelectedIndex}
+            onStep={step}
+            tallies={tallies}
+          />
+        ) : (
+          <aside className="margin margin-idle">
+            <h2>Margin notes</h2>
+            <p className="margin-empty">
+              Write your text on the page, then press <strong>Check</strong>. Anything
+              worth your attention will be marked in the text and listed here.
+            </p>
+            <ul className="legend">
+              <li className="legend-word">Word not in the lexicon</li>
+              <li className="legend-sandhi">Sandhi not applied</li>
+              <li className="legend-syntax">Case or agreement</li>
+              <li className="legend-review">Offered for review, not an error</li>
+            </ul>
+          </aside>
+        )}
+      </main>
+
+      {mode === "proof" && result.compounds?.length > 0 && (
+        <section className="endnotes">
+          <h2>Samāsa · समास-विश्लेषणम्</h2>
+          <div className="endnote-grid">
+            {result.compounds.map((c, i) => (
+              <article key={i} className="endnote">
+                <header>
+                  <span lang="sa" className="endnote-word">
+                    {c.compound_text}
+                  </span>
+                  <span className="endnote-type">{c.compound_type.split(" ")[0]}</span>
+                </header>
+                <p>
+                  <span className="popover-key">Type</span> {c.compound_type}
+                </p>
+                <p>
+                  <span className="popover-key">Vigraha</span>
+                  <em lang="sa">{c.vigraha_vakya}</em>
+                </p>
+                <p>
+                  <span className="popover-key">Parts</span>
+                  <span lang="sa">{c.components.join(" + ")}</span>
+                </p>
+              </article>
+            ))}
+          </div>
         </section>
-
-        {/* RIGHT: results */}
-        <section className="pane">
-          <h2>Diagnostics</h2>
-          {!result && !loading && (
-            <p className="placeholder">Click <strong>Check Sanskrit Text</strong> or pick an example.</p>
-          )}
-          {loading && <p className="placeholder">Checking Pāṇinian rules…</p>}
-
-          {result && (
-            <>
-              {/* Summary badges */}
-              <div className="summary">
-                <span className="badge total">{result.token_count} tokens</span>
-                {totalIssues === 0 ? (
-                  <span className="badge good">✓ All checks passed</span>
-                ) : (
-                  <>
-                    {result.sandhi_error_count > 0 && (
-                      <span className="badge warning">{result.sandhi_error_count} sandhi</span>
-                    )}
-                    {result.syntax_error_count > 0 && (
-                      <span className="badge karaka">{result.syntax_error_count} syntax</span>
-                    )}
-                    {result.review_count > 0 && (
-                      <span className="badge review">
-                        {result.review_count} for review
-                      </span>
-                    )}
-                    {(result.error_count - result.sandhi_error_count - result.syntax_error_count) > 0 && (
-                      <span className="badge bad">
-                        {result.error_count - result.sandhi_error_count - result.syntax_error_count} word error(s)
-                      </span>
-                    )}
-                  </>
-                )}
-              </div>
-
-              {/* Token list */}
-              <ul className="token-list">
-                {result.tokens.map((t, i) => {
-                  const cls = getTokenClass(t);
-                  return (
-                    <li key={i} className={cls}>
-                      <div className="token-header">
-                        <span className="token-text">{t.text}</span>
-                        <span className={`status-tag ${cls}`}>{getStatusLabel(t)}</span>
-                      </div>
-
-                      <div className="token-detail">
-                        {t.status === "valid" && (
-                          <>
-                            {t.lemma && (
-                              <div className="meta-line">
-                                <strong>Stem/Root:</strong> {t.lemma}
-                              </div>
-                            )}
-                            {t.analysis && (
-                              <details>
-                                <summary>Grammatical Analysis (व्याकरण-विश्लेषणम्)</summary>
-                                <pre>{t.analysis}</pre>
-                              </details>
-                            )}
-                          </>
-                        )}
-
-                        {t.status === "sandhi_error" && (
-                          <div className={`diag-box ${isReview(t) ? "review-box" : "sandhi-box"}`}>
-                            {t.suggestion && (
-                              <div className="sug-line">
-                                <strong>Correct Sandhi Form:</strong>{" "}
-                                <span className="highlight-text">{t.suggestion}</span>
-                              </div>
-                            )}
-                            {t.rule && <div className="rule-line"><strong>Sutra:</strong> <code>{t.rule}</code></div>}
-                            {t.sandhi_issue && <div className="issue-desc">{t.sandhi_issue}</div>}
-                          </div>
-                        )}
-
-                        {(t.status === "karaka_error" || t.status === "upapada_error") && (
-                          <div className={`diag-box ${isReview(t) ? "review-box" : "karaka-box"}`}>
-                            {t.suggestion && (
-                              <div className="sug-line">
-                                <strong>Correct Case Form:</strong>{" "}
-                                <span className="highlight-text">{t.suggestion}</span>
-                              </div>
-                            )}
-                            {t.rule && <div className="rule-line"><strong>Sutra:</strong> <code>{t.rule}</code></div>}
-                            {t.karaka_issue && <div className="issue-desc">{t.karaka_issue}</div>}
-                          </div>
-                        )}
-
-                        {t.status === "agreement_error" && (
-                          <div className={`diag-box ${isReview(t) ? "review-box" : "agreement-box"}`}>
-                            {t.suggestion && (
-                              <div className="sug-line">
-                                <strong>Correct Verb Form:</strong>{" "}
-                                <span className="highlight-text">{t.suggestion}</span>
-                              </div>
-                            )}
-                            {t.rule && <div className="rule-line"><strong>Sutra:</strong> <code>{t.rule}</code></div>}
-                            {t.karaka_issue && <div className="issue-desc">{t.karaka_issue}</div>}
-                          </div>
-                        )}
-
-                        {t.status === "invalid" && (
-                          <div className={`diag-box ${isReview(t) ? "review-box" : "invalid-box"}`}>
-                            {isReview(t) ? (
-                              <div className="review-desc">
-                                Not listed in the lexicon. Compounds, sandhi-fused
-                                word pairs, proper nouns and technical terms are
-                                frequently absent, so this is offered for your
-                                judgement — it is <strong>not</strong> reported as an error.
-                              </div>
-                            ) : (
-                              <div className="error-desc">Not found in Sanskrit lexicon (अशुद्धं पदम्)</div>
-                            )}
-                            {t.suggestion && (
-                              <div className="sug-line">
-                                <strong>Suggested Form:</strong>{" "}
-                                <span className="highlight-text">{t.suggestion}</span>
-                              </div>
-                            )}
-                            {t.rule && <div className="rule-line"><strong>Note:</strong> <code>{t.rule}</code></div>}
-                            {t.analysis && <div className="issue-desc">{t.analysis}</div>}
-                          </div>
-                        )}
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-
-              {/* Compound (Samāsa) Analysis */}
-              {result.compounds && result.compounds.length > 0 && (
-                <div className="compounds-section">
-                  <h3>Samāsa Analysis (समास-विश्लेषणम्)</h3>
-                  {result.compounds.map((c, i) => (
-                    <div key={i} className="compound-card">
-                      <div className="compound-header">
-                        <span className="compound-text">{c.compound_text}</span>
-                        <span className="compound-type-tag">{c.compound_type.split(" ")[0]}</span>
-                      </div>
-                      <div className="compound-body">
-                        <div><strong>Type:</strong> {c.compound_type}</div>
-                        <div><strong>Vigraha Vākya:</strong> <em>{c.vigraha_vakya}</em></div>
-                        <div><strong>Components:</strong> {c.components.join(" + ")}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Syntax Issues Summary */}
-              {result.syntax_issues && result.syntax_issues.length > 0 && (
-                <div className="syntax-summary">
-                  <h3>Syntax Issues (वाक्य-दोष-सारांशः)</h3>
-                  {result.syntax_issues.map((issue, i) => (
-                    <div key={i} className={`syntax-issue-card ${issue.issue_type}`}>
-                      <div className="syntax-issue-title">{issue.title}</div>
-                      <div className="syntax-issue-token">Token: <strong>{issue.token_text}</strong></div>
-                      {issue.suggested_text && (
-                        <div className="syntax-issue-sug">
-                          Suggested: <span className="highlight-text">{issue.suggested_text}</span>
-                        </div>
-                      )}
-                      {issue.rule_sutra && (
-                        <div className="syntax-issue-rule">Sutra: <code>{issue.rule_sutra}</code></div>
-                      )}
-                      <div className="syntax-issue-desc">{issue.description}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-        </section>
-      </div>
+      )}
     </div>
   );
 }

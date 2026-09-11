@@ -1,111 +1,112 @@
+/* Base layer: design tokens, resets and the Devanagari type stack.
+   Everything visual that is not specific to a component lives here. */
+
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+  /* --- the desk and the paper on it --------------------------------- */
+  --desk: #e7e1d4;
+  --desk-sheen: rgba(255, 255, 255, 0.5);
+  --paper: #fbf8f1;
+  --paper-edge: #efe8d7;
+  --rule: #e2dac7;
+  --rule-soft: #ece5d5;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+  --ink: #2b2620;
+  --ink-mid: #5d554a;
+  --ink-soft: #8b8172;
+  --gold: #9a6b2f;
+  --gold-soft: rgba(154, 107, 47, 0.12);
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
+  /* --- finding colours ---------------------------------------------- */
+  --mark-word: #b02020;
+  --mark-word-bg: rgba(176, 32, 32, 0.1);
+  --mark-sandhi: #a85e08;
+  --mark-sandhi-bg: rgba(168, 94, 8, 0.11);
+  --mark-syntax: #6b28c9;
+  --mark-syntax-bg: rgba(107, 40, 201, 0.1);
+  --mark-review: #7b8794;
+  --mark-review-bg: rgba(123, 135, 148, 0.08);
+  --mark-ok: #2f7d51;
+
+  --shadow-sheet:
+    0 1px 2px rgba(56, 44, 24, 0.08), 0 12px 28px -10px rgba(56, 44, 24, 0.28);
+  --shadow-pop:
+    0 2px 4px rgba(40, 32, 18, 0.1), 0 16px 32px -12px rgba(40, 32, 18, 0.42);
+
+  --sans: ui-sans-serif, system-ui, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  /* Faces that actually carry Devanagari conjuncts, falling through what
+     Windows, macOS and common Linux distributions ship, before giving up on a
+     generic serif. No webfont: the product is offline by design. */
+  --deva:
+    'Noto Serif Devanagari', 'Sanskrit Text', 'Nirmala UI', 'Kokila',
+    'Devanagari MT', 'Noto Sans Devanagari', serif;
+
   color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
+  font: 16px/1.5 var(--sans);
+  color: var(--ink);
+  background: var(--desk);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
+    --desk: #0e0d0c;
+    --desk-sheen: rgba(255, 255, 255, 0.03);
+    --paper: #201d19;
+    --paper-edge: #2e2a23;
+    --rule: #34302a;
+    --rule-soft: #2a2722;
 
-  #social .button-icon {
-    filter: invert(1) brightness(2);
+    --ink: #e9e3d6;
+    --ink-mid: #b3ab9c;
+    --ink-soft: #8a8274;
+    --gold: #cf9c56;
+    --gold-soft: rgba(207, 156, 86, 0.16);
+
+    --mark-word: #f08a86;
+    --mark-word-bg: rgba(240, 138, 134, 0.14);
+    --mark-sandhi: #e5a94f;
+    --mark-sandhi-bg: rgba(229, 169, 79, 0.14);
+    --mark-syntax: #bfa5f5;
+    --mark-syntax-bg: rgba(191, 165, 245, 0.14);
+    --mark-review: #9aa3ad;
+    --mark-review-bg: rgba(154, 163, 173, 0.1);
+    --mark-ok: #6fbf8e;
+
+    --shadow-sheet:
+      0 1px 2px rgba(0, 0, 0, 0.5), 0 14px 30px -10px rgba(0, 0, 0, 0.7);
+    --shadow-pop:
+      0 2px 6px rgba(0, 0, 0, 0.5), 0 18px 36px -12px rgba(0, 0, 0, 0.75);
   }
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
-}
-
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
   min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
+  background: var(--desk);
+  color: var(--ink);
 }
 
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
+/* Devanagari always gets the serif stack and extra leading, wherever it
+   appears -- page body, margin notes, popover headings. */
+[lang='sa'] {
+  font-family: var(--deva);
+  font-feature-settings: 'kern' 1, 'liga' 1;
 }
 
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
-}
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
-p {
-  margin: 0;
+button {
+  font: inherit;
+  color: inherit;
 }
 
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
-}
-
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+  border-radius: 3px;
 }

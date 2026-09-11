@@ -1,429 +1,977 @@
-* { box-sizing: border-box; }
+/* The manuscript desk: a sheet of paper with a proofreader's margin beside it.
+   Tokens live in index.css; this file is layout and the look of a finding. */
 
-body {
-  margin: 0;
-  background: #f8fafc;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  color: #1e293b;
+.desk {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(120% 80% at 50% -10%, var(--desk-sheen), transparent 60%),
+    var(--desk);
 }
 
-.page {
-  max-width: 1280px;
+/* ------------------------------------------------------------------ deskbar */
+
+.deskbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px clamp(16px, 4vw, 40px);
+  background: color-mix(in srgb, var(--desk) 88%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--rule);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  border-radius: 9px;
+  font-size: 19px;
+  line-height: 1;
+  color: var(--paper);
+  background: linear-gradient(160deg, var(--gold), #6f4a1d);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28);
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+  min-width: 0;
+}
+
+.brand-text strong {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.brand-text span {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+
+.deskbar-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* -------------------------------------------------------------------- buttons */
+
+.btn {
+  border-radius: 8px;
+  padding: 8px 15px;
+  font-size: 13.5px;
+  font-weight: 550;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background 0.15s, border-color 0.15s, transform 0.08s;
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn-quiet {
+  background: transparent;
+  border-color: var(--rule);
+  color: var(--ink-mid);
+}
+
+.btn-quiet:hover {
+  background: var(--gold-soft);
+  border-color: var(--gold);
+  color: var(--ink);
+}
+
+.btn-primary {
+  background: linear-gradient(180deg, #3d342a, #2a231b);
+  color: #f6f0e4;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, #4a3f32, #322a21);
+}
+
+.btn-primary:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+@media (prefers-color-scheme: dark) {
+  .btn-primary {
+    background: linear-gradient(180deg, #d8cfbc, #b9ae98);
+    color: #1a1713;
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: linear-gradient(180deg, #e6ddca, #c7bca6);
+  }
+}
+
+.caret {
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+/* ------------------------------------------------------------- examples menu */
+
+.examples {
+  position: relative;
+}
+
+.examples-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 40;
+  width: 296px;
+  max-height: min(62vh, 460px);
+  overflow-y: auto;
+  padding: 8px;
+  border-radius: 12px;
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  box-shadow: var(--shadow-pop);
+}
+
+.examples-hint {
+  margin: 4px 8px 8px;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.examples-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.examples-item:hover {
+  background: var(--gold-soft);
+}
+
+.examples-tag {
+  margin-left: auto;
+  flex: none;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  padding: 2px 7px;
+}
+
+/* -------------------------------------------------------------------- banners */
+
+.banner {
+  margin: 12px clamp(16px, 4vw, 40px) 0;
+  padding: 10px 14px;
+  border-radius: 9px;
+  font-size: 13.5px;
+  border: 1px solid;
+}
+
+.banner-error {
+  color: var(--mark-word);
+  border-color: color-mix(in srgb, var(--mark-word) 40%, transparent);
+  background: var(--mark-word-bg);
+}
+
+.banner-warn {
+  color: var(--mark-sandhi);
+  border-color: color-mix(in srgb, var(--mark-sandhi) 40%, transparent);
+  background: var(--mark-sandhi-bg);
+}
+
+/* --------------------------------------------------------------------- spread */
+
+.spread {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 322px;
+  gap: clamp(16px, 3vw, 34px);
+  align-items: start;
+  padding: clamp(20px, 3.5vw, 44px) clamp(16px, 4vw, 40px) 56px;
+  max-width: 1240px;
+  width: 100%;
   margin: 0 auto;
-  padding: 28px 24px 64px;
 }
 
-header h1 {
-  margin: 0 0 4px;
-  font-size: 26px;
-  color: #0f172a;
+/* ---------------------------------------------------------------------- sheet */
+
+.sheet {
+  position: relative;
+  width: 100%;
+  max-width: 47rem;
+  margin-inline: auto;
+  border-radius: 3px 10px 10px 3px;
+  background: var(--paper);
+  border: 1px solid var(--paper-edge);
+  box-shadow: var(--shadow-sheet);
+  min-height: 60svh;
+  display: flex;
+  flex-direction: column;
 }
 
-.subtitle {
-  margin: 0 0 20px;
-  color: #64748b;
+/* The gutter shading of an opened book, without the cost of a real two-page
+   spread -- a spread would halve the column width and break long prose. */
+.sheet-spine {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 26px;
+  border-radius: 3px 0 0 3px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--paper-edge) 85%, #000 6%),
+    transparent
+  );
+  pointer-events: none;
+}
+
+.sheet-head,
+.sheet-foot {
+  display: flex;
+  align-items: center;
+  font-size: 11.5px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.sheet-head {
+  margin: 0 clamp(28px, 6%, 68px);
+  padding: 14px 0 12px;
+  border-bottom: 1px solid var(--rule-soft);
+}
+
+.sheet-foot {
+  justify-content: center;
+  padding: 0 clamp(28px, 6%, 68px) 20px;
+}
+
+.sheet-head-count {
+  margin-left: auto;
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
+.sheet-body {
+  position: relative; /* the popover's offsetParent */
+  flex: 1;
+  display: flex;
+  padding: clamp(22px, 4%, 44px) clamp(28px, 6%, 68px);
+}
+
+.ornament {
+  color: var(--ink-soft);
+  opacity: 0.45;
+  font-size: 15px;
+}
+
+/* ----------------------------------------------------------------- page text */
+
+/* Composing and proofing must be typographically identical, or pressing Check
+   reads as a jump to a different screen instead of the page settling. */
+.page-text {
+  width: 100%;
+  font-family: var(--deva);
+  font-size: clamp(1.28rem, 1.05rem + 0.7vw, 1.6rem);
+  line-height: 2.15;
+  color: var(--ink);
+  letter-spacing: 0.01em;
+}
+
+.page-input {
+  border: 0;
+  resize: none;
+  background: transparent;
+  outline: none;
+  min-height: 46svh;
+  padding: 0;
+  display: block;
+}
+
+.page-input::placeholder {
+  color: var(--ink-soft);
+  opacity: 0.7;
+}
+
+.page-proof {
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+/* ---------------------------------------------------------------------- marks */
+
+/* Every word is a button, but a clean one is drawn exactly as plain text. A
+   page that underlines everything teaches the eye to ignore underlining. */
+.word {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 1px 3px;
+  margin: 0 -3px;
+  border-radius: 4px;
+  cursor: pointer;
+  text-underline-offset: 0.28em;
+  transition: background 0.12s;
+}
+
+.word-ok:hover {
+  background: var(--gold-soft);
+}
+
+.word-word,
+.word-sandhi,
+.word-syntax {
+  text-decoration: underline wavy;
+  text-decoration-thickness: 1.6px;
+}
+
+.word-word {
+  color: var(--mark-word);
+  background: var(--mark-word-bg);
+  text-decoration-color: var(--mark-word);
+}
+
+.word-sandhi {
+  color: var(--mark-sandhi);
+  background: var(--mark-sandhi-bg);
+  text-decoration-color: var(--mark-sandhi);
+}
+
+.word-syntax {
+  color: var(--mark-syntax);
+  background: var(--mark-syntax-bg);
+  text-decoration-color: var(--mark-syntax);
+}
+
+/* A review item is not an accusation. It keeps the ink colour of ordinary text
+   and gets the faintest mark the page has -- a dotted rule, no fill. */
+.word-review {
+  text-decoration: underline dotted var(--mark-review);
+  text-decoration-thickness: 1.4px;
+}
+
+.word-review:hover {
+  background: var(--mark-review-bg);
+}
+
+.word-selected {
+  background: color-mix(in srgb, currentColor 22%, transparent);
+  text-decoration-thickness: 2.6px;
+}
+
+.word-review.word-selected,
+.word-ok.word-selected {
+  background: color-mix(in srgb, var(--gold) 26%, transparent);
+}
+
+/* -------------------------------------------------------------------- popover */
+
+.popover {
+  position: absolute;
+  z-index: 20;
+  width: min(340px, 88%);
+  border-radius: 12px;
+  border: 1px solid var(--rule);
+  border-top: 3px solid var(--tier, var(--gold));
+  background: var(--paper);
+  box-shadow: var(--shadow-pop);
+  font-family: var(--sans);
   font-size: 13px;
+  line-height: 1.55;
+  color: var(--ink-mid);
+  animation: pop 0.13s ease-out;
 }
 
-/* Sample bar */
-.sample-bar {
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+}
+
+/* The tier colour drives the top rule, the suggestion panel and the button. */
+.popover.popover-word { --tier: var(--mark-word); }
+.popover.popover-sandhi { --tier: var(--mark-sandhi); }
+.popover.popover-syntax { --tier: var(--mark-syntax); }
+.popover.popover-review { --tier: var(--mark-review); }
+.popover.popover-ok { --tier: var(--mark-ok); }
+
+/* The pointer back to the word, so the card is never ambiguous about which one
+   it describes when several are marked on the same line. */
+.popover-arrow {
+  position: absolute;
+  left: var(--arrow-x, 24px);
+  top: -6px;
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
+  transform: rotate(45deg);
+  background: var(--paper);
+  border-left: 1px solid var(--rule);
+  border-top: 1px solid var(--rule);
+}
+
+.popover-above .popover-arrow {
+  top: auto;
+  bottom: -6px;
+  border: 0;
+  border-right: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+}
+
+.popover-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 11px 12px 9px 14px;
+  border-bottom: 1px solid var(--rule-soft);
+}
+
+.popover-headword {
+  font-family: var(--deva);
+  font-size: 21px;
+  line-height: 1.35;
+  color: var(--ink);
+}
+
+.popover-close {
+  margin-left: auto;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 19px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.popover-close:hover {
+  background: var(--rule-soft);
+  color: var(--ink);
+}
+
+.popover-body {
+  padding: 11px 14px 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.popover-note {
+  margin: 0;
+}
+
+.popover-title {
+  margin: 0;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.popover-meta,
+.popover-rule {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.popover-key {
+  flex: none;
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.popover-rule code {
+  font-family: var(--deva);
+  font-size: 13.5px;
+  color: var(--ink);
+  background: var(--rule-soft);
+  border-radius: 5px;
+  padding: 2px 7px;
+}
+
+/* The suggestion is the reason the card exists, so it is the one block that
+   gets a surface of its own. */
+.suggestion {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+  padding: 9px 11px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--tier) 9%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tier) 28%, transparent);
+}
+
+.suggestion-text {
+  font-family: var(--deva);
+  font-size: 19px;
+  color: var(--ink);
+}
+
+.btn-apply {
+  margin-left: auto;
+  border: 0;
+  border-radius: 7px;
+  padding: 5px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--paper);
+  background: var(--tier);
+}
+
+.btn-apply:hover {
+  filter: brightness(1.1);
+}
+
+@media (prefers-color-scheme: dark) {
+  .btn-apply {
+    color: #17140f;
+  }
+}
+
+.popover-analysis summary {
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.popover-analysis pre {
+  margin: 7px 0 0;
+  padding: 9px 10px;
+  border-radius: 7px;
+  background: var(--rule-soft);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  color: var(--ink-mid);
+}
+
+/* ----------------------------------------------------------------- tier chips */
+
+.tier {
+  flex: none;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border-radius: 999px;
+  padding: 3px 8px;
+  border: 1px solid;
+}
+
+.tier-word {
+  color: var(--mark-word);
+  background: var(--mark-word-bg);
+  border-color: color-mix(in srgb, var(--mark-word) 35%, transparent);
+}
+.tier-sandhi {
+  color: var(--mark-sandhi);
+  background: var(--mark-sandhi-bg);
+  border-color: color-mix(in srgb, var(--mark-sandhi) 35%, transparent);
+}
+.tier-syntax {
+  color: var(--mark-syntax);
+  background: var(--mark-syntax-bg);
+  border-color: color-mix(in srgb, var(--mark-syntax) 35%, transparent);
+}
+.tier-review {
+  color: var(--mark-review);
+  background: var(--mark-review-bg);
+  border-color: color-mix(in srgb, var(--mark-review) 32%, transparent);
+}
+.tier-ok {
+  color: var(--mark-ok);
+  background: color-mix(in srgb, var(--mark-ok) 10%, transparent);
+  border-color: color-mix(in srgb, var(--mark-ok) 32%, transparent);
+}
+
+/* --------------------------------------------------------------------- margin */
+
+.margin {
+  position: sticky;
+  top: 78px;
+  align-self: start;
+  max-height: calc(100svh - 100px);
+  overflow-y: auto;
+  padding: 16px 4px 16px 18px;
+  border-left: 1px solid var(--rule);
+}
+
+.margin h2 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.margin-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.margin-nav {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.margin-nav button {
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink-mid);
+  cursor: pointer;
+  line-height: 1;
+}
+
+.margin-nav button:hover:not(:disabled) {
+  background: var(--gold-soft);
+}
+
+.margin-nav button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.margin-count {
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-soft);
+  min-width: 30px;
+  text-align: center;
+}
+
+.margin-empty {
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: var(--ink-soft);
+  line-height: 1.6;
+}
+
+.margin-idle {
+  padding-top: 16px;
+}
+
+/* -------------------------------------------------------------------- tallies */
+
+.tallies {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 8px;
-  background: #fff;
-  padding: 12px 16px;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
-  margin-bottom: 24px;
+  gap: 6px;
 }
 
-.sample-label {
-  font-size: 12px;
+.tally {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  border-radius: 8px;
+  padding: 5px 9px;
+  border: 1px solid;
+  font-size: 11.5px;
+}
+
+.tally-count {
   font-weight: 700;
-  color: #475569;
-  padding-top: 4px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.tally.tally-word {
+  color: var(--mark-word);
+  background: var(--mark-word-bg);
+  border-color: color-mix(in srgb, var(--mark-word) 30%, transparent);
+}
+.tally.tally-sandhi {
+  color: var(--mark-sandhi);
+  background: var(--mark-sandhi-bg);
+  border-color: color-mix(in srgb, var(--mark-sandhi) 30%, transparent);
+}
+.tally.tally-syntax {
+  color: var(--mark-syntax);
+  background: var(--mark-syntax-bg);
+  border-color: color-mix(in srgb, var(--mark-syntax) 30%, transparent);
+}
+.tally.tally-review {
+  color: var(--mark-review);
+  background: var(--mark-review-bg);
+  border-color: color-mix(in srgb, var(--mark-review) 28%, transparent);
+}
+
+/* ---------------------------------------------------------------------- notes */
+
+.notes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.note {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  padding: 9px 11px;
+  border-radius: 9px;
+  border: 1px solid transparent;
+  border-left: 3px solid var(--tier, var(--rule));
+  background: transparent;
+  transition: background 0.13s, border-color 0.13s;
+}
+
+.note.note-word { --tier: var(--mark-word); }
+.note.note-sandhi { --tier: var(--mark-sandhi); }
+.note.note-syntax { --tier: var(--mark-syntax); }
+.note.note-review { --tier: var(--mark-review); }
+
+.note:hover {
+  background: color-mix(in srgb, var(--tier) 8%, transparent);
+}
+
+.note-selected {
+  background: color-mix(in srgb, var(--tier) 12%, transparent);
+  border-color: color-mix(in srgb, var(--tier) 34%, transparent);
+  border-left-color: var(--tier);
+}
+
+.note-top {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.note-word {
+  font-family: var(--deva);
+  font-size: 17px;
+  line-height: 1.4;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.sample-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
+.note-top .tier {
+  margin-left: auto;
 }
 
-.sample-btn {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  background: #f1f5f9;
-  color: #334155;
-  border: 1px solid #cbd5e1;
-  padding: 4px 9px;
-  border-radius: 6px;
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.12s;
+.note-line {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-.sample-btn:hover { background: #e2e8f0; }
-
-.sample-tag {
-  font-size: 10px;
-  font-weight: 700;
-  padding: 1px 5px;
-  border-radius: 3px;
-  background: #94a3b8;
-  color: #fff;
-}
-
-.sample-sandhi .sample-tag  { background: #f59e0b; }
-.sample-spelling .sample-tag { background: #8b5cf6; }
-.sample-verb .sample-tag     { background: #ef4444; }
-.sample-karaka .sample-tag   { background: #dc2626; }
-.sample-agreement .sample-tag { background: #d97706; }
-.sample-upapada .sample-tag  { background: #0891b2; }
-.sample-compound .sample-tag { background: #059669; }
-
-/* Two-column layout */
-.split {
-  display: grid;
-  grid-template-columns: 1fr 1.4fr;
-  gap: 24px;
-  align-items: start;
-}
-
-@media (max-width: 900px) { .split { grid-template-columns: 1fr; } }
-
-.pane {
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 22px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-}
-
-.pane h2 {
-  margin-top: 0;
-  font-size: 15px;
-  color: #0369a1;
-  border-bottom: 2px solid #f0f9ff;
-  padding-bottom: 8px;
-  margin-bottom: 16px;
-}
-
-textarea {
-  width: 100%;
-  font-size: 19px;
-  line-height: 1.7;
-  font-family: "Noto Sans Devanagari", sans-serif;
-  padding: 12px 14px;
-  border: 1.5px solid #cbd5e1;
-  border-radius: 8px;
-  resize: vertical;
-  margin-bottom: 14px;
-  outline: none;
-}
-
-textarea:focus {
-  border-color: #0284c7;
-  box-shadow: 0 0 0 3px rgba(2,132,199,0.12);
-}
-
-.check-btn {
-  background: #0369a1;
-  color: #fff;
-  border: none;
-  padding: 11px 22px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.check-btn:hover:not(:disabled) { background: #075985; }
-.check-btn:disabled { background: #94a3b8; cursor: not-allowed; }
-
-.error-box {
-  margin-top: 14px;
-  background: #fef2f2;
-  color: #991b1b;
-  border: 1px solid #fecaca;
-  padding: 10px 14px;
-  border-radius: 8px;
+.note-fix {
   font-size: 13px;
+  color: var(--ink-mid);
 }
 
-.placeholder { color: #94a3b8; font-size: 13px; text-align: center; margin-top: 32px; }
-
-/* Summary badges */
-.summary {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-  margin-bottom: 16px;
+.note-fix span {
+  font-family: var(--deva);
+  font-size: 16px;
+  color: var(--ink);
 }
 
-.badge {
-  padding: 4px 11px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 700;
-}
+/* --------------------------------------------------------------------- legend */
 
-.badge.total   { background: #f1f5f9; color: #334155; }
-.badge.good    { background: #dcfce7; color: #15803d; }
-.badge.warning { background: #fef3c7; color: #b45309; }
-.badge.review  { background: #e2e8f0; color: #334155; }
-.badge.bad     { background: #fee2e2; color: #b91c1c; }
-.badge.karaka  { background: #fce7f3; color: #9d174d; }
-
-/* Token list */
-.token-list {
+.legend {
   list-style: none;
+  margin: 18px 0 0;
   padding: 0;
-  margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 9px;
+  font-size: 12.5px;
+  color: var(--ink-soft);
 }
 
-.token-list li {
-  border-radius: 8px;
-  padding: 12px 15px;
-  border-left: 5px solid;
+.legend li::before {
+  content: "";
+  display: inline-block;
+  width: 22px;
+  height: 0;
+  margin-right: 9px;
+  vertical-align: middle;
+  border-bottom: 2px solid;
 }
 
-.token-list li.valid           { background: #f0fdf4; border-left-color: #22c55e; }
-.token-list li.sandhi-issue    { background: #fffbeb; border-left-color: #f59e0b; }
-.token-list li.karaka-issue    { background: #fff1f2; border-left-color: #e11d48; }
-.token-list li.agreement-issue { background: #fff7ed; border-left-color: #ea580c; }
-.token-list li.invalid         { background: #fef2f2; border-left-color: #ef4444; }
-/* Review tier: offered for a human decision, never asserted as a defect.
-   Deliberately neutral slate -- no red, no warning amber -- so a reader can
-   tell at a glance that nothing is being claimed to be wrong. */
-.token-list li.review          { background: #f8fafc; border-left-color: #94a3b8; }
+.legend-word::before { border-bottom-style: wavy; color: var(--mark-word); }
+.legend-sandhi::before { border-bottom-style: wavy; color: var(--mark-sandhi); }
+.legend-syntax::before { border-bottom-style: wavy; color: var(--mark-syntax); }
+.legend-review::before { border-bottom-style: dotted; color: var(--mark-review); }
 
-.token-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 6px;
+/* ------------------------------------------------------------------ endnotes */
+
+.endnotes {
+  max-width: 1240px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 clamp(16px, 4vw, 40px) 64px;
 }
 
-.token-text {
-  font-size: 21px;
-  font-family: "Noto Sans Devanagari", sans-serif;
-  font-weight: 700;
-  color: #0f172a;
+.endnotes h2 {
+  margin: 0 0 14px;
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
 }
 
-.status-tag {
-  font-size: 11px;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 4px;
+.endnote-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(268px, 1fr));
+  gap: 12px;
 }
 
-.status-tag.valid           { background: #bbf7d0; color: #166534; }
-.status-tag.sandhi-issue    { background: #fed7aa; color: #9a3412; }
-.status-tag.karaka-issue    { background: #fecdd3; color: #9f1239; }
-.status-tag.agreement-issue { background: #fed7aa; color: #7c2d12; }
-.status-tag.invalid         { background: #fecaca; color: #991b1b; }
-.status-tag.review          { background: #e2e8f0; color: #334155; }
-
-/* Diagnostic boxes */
-.diag-box {
-  margin-top: 6px;
-  padding: 9px 12px;
-  border-radius: 6px;
+.endnote {
+  padding: 13px 15px;
+  border-radius: 10px;
+  border: 1px solid var(--rule);
+  background: var(--paper);
   font-size: 13px;
+  color: var(--ink-mid);
 }
 
-.sandhi-box    { background: #fef9c3; border: 1px solid #fde047; }
-.karaka-box    { background: #ffe4e6; border: 1px solid #fda4af; }
-.agreement-box { background: #ffedd5; border: 1px solid #fdba74; }
-.invalid-box   { background: #fee2e2; border: 1px solid #fca5a5; }
-.review-box    { background: #f1f5f9; border: 1px solid #cbd5e1; }
-.review-desc   { font-size: 13px; color: #475569; line-height: 1.5; }
-
-.sug-line { font-size: 14px; margin-bottom: 5px; }
-
-.highlight-text {
-  font-size: 18px;
-  font-weight: 700;
-  font-family: "Noto Sans Devanagari", sans-serif;
-  color: #0f172a;
-  background: #fff;
-  padding: 1px 6px;
-  border-radius: 4px;
-  border: 1px solid #cbd5e1;
-}
-
-.rule-line {
-  font-size: 12px;
-  margin-top: 4px;
-  color: #475569;
-}
-
-.rule-line code {
-  background: #fff;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-weight: 700;
-  color: #0369a1;
-  border: 1px solid #e2e8f0;
-}
-
-.issue-desc, .error-desc {
-  margin-top: 5px;
-  font-size: 12px;
-  color: #64748b;
-  line-height: 1.4;
-}
-
-.meta-line { margin-top: 3px; font-size: 13px; }
-
-details summary {
-  cursor: pointer;
-  font-weight: 600;
-  color: #0369a1;
-  font-size: 12px;
-  margin-top: 5px;
-}
-
-details pre {
-  white-space: pre-wrap;
-  word-break: break-word;
-  font-size: 11px;
-  background: #f8fafc;
-  padding: 8px 12px;
-  border-radius: 6px;
-  border: 1px solid #e2e8f0;
-  margin-top: 6px;
-}
-
-/* Compound (Samāsa) section */
-.compounds-section {
-  margin-top: 20px;
-}
-
-.compounds-section h3 {
-  font-size: 14px;
-  color: #059669;
-  border-bottom: 2px solid #d1fae5;
-  padding-bottom: 6px;
-  margin-bottom: 12px;
-}
-
-.compound-card {
-  background: #f0fdf4;
-  border: 1px solid #a7f3d0;
-  border-radius: 8px;
-  padding: 12px 14px;
-  margin-bottom: 10px;
-}
-
-.compound-header {
+.endnote header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 8px;
+  gap: 8px;
+  margin-bottom: 9px;
+  padding-bottom: 9px;
+  border-bottom: 1px solid var(--rule-soft);
 }
 
-.compound-text {
-  font-size: 20px;
-  font-family: "Noto Sans Devanagari", sans-serif;
-  font-weight: 700;
-  color: #0f172a;
+.endnote-word {
+  font-family: var(--deva);
+  font-size: 19px;
+  color: var(--ink);
 }
 
-.compound-type-tag {
-  font-size: 11px;
-  font-weight: 700;
-  background: #059669;
-  color: #fff;
-  padding: 2px 7px;
-  border-radius: 4px;
+.endnote-type {
+  margin-left: auto;
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--gold);
+  background: var(--gold-soft);
+  border-radius: 999px;
+  padding: 3px 8px;
 }
 
-.compound-body {
-  font-size: 13px;
-  line-height: 1.6;
-  color: #374151;
+.endnote p {
+  margin: 0 0 6px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: baseline;
 }
 
-/* Syntax Issues summary */
-.syntax-summary {
-  margin-top: 20px;
+.endnote p:last-child {
+  margin-bottom: 0;
 }
 
-.syntax-summary h3 {
-  font-size: 14px;
-  color: #9d174d;
-  border-bottom: 2px solid #fce7f3;
-  padding-bottom: 6px;
-  margin-bottom: 12px;
+/* ----------------------------------------------------------------- responsive */
+
+@media (max-width: 1040px) {
+  .spread {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .margin {
+    position: static;
+    max-height: none;
+    border-left: 0;
+    border-top: 1px solid var(--rule);
+    padding: 18px 2px 0;
+  }
 }
 
-.syntax-issue-card {
-  border-radius: 8px;
-  padding: 12px 14px;
-  margin-bottom: 10px;
-  border-left: 4px solid;
+@media (max-width: 560px) {
+  .deskbar {
+    flex-wrap: wrap;
+  }
+
+  .deskbar-actions {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .brand-text strong {
+    font-size: 14px;
+  }
+
+  .popover {
+    width: min(340px, 94%);
+  }
 }
 
-.syntax-issue-card.karaka_error {
-  background: #fff1f2;
-  border-left-color: #e11d48;
-}
-
-.syntax-issue-card.agreement_error {
-  background: #fff7ed;
-  border-left-color: #ea580c;
-}
-
-.syntax-issue-card.upapada_error {
-  background: #f0f9ff;
-  border-left-color: #0891b2;
-}
-
-.syntax-issue-title {
-  font-size: 13px;
-  font-weight: 700;
-  color: #1e293b;
-  margin-bottom: 5px;
-}
-
-.syntax-issue-token {
-  font-size: 13px;
-  color: #475569;
-  margin-bottom: 4px;
-}
-
-.syntax-issue-sug {
-  font-size: 13px;
-  margin-bottom: 4px;
-}
-
-.syntax-issue-rule {
-  font-size: 12px;
-  color: #475569;
-  margin-bottom: 4px;
-}
-
-.syntax-issue-rule code {
-  background: #fff;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-weight: 700;
-  color: #0369a1;
-  border: 1px solid #e2e8f0;
-}
-
-.syntax-issue-desc {
-  font-size: 12px;
-  color: #64748b;
-  line-height: 1.4;
+@media (prefers-reduced-motion: reduce) {
+  .popover {
+    animation: none;
+  }
+  .btn:active {
+    transform: none;
+  }
 }
