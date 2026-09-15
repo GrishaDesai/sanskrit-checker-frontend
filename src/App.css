@@ -101,13 +101,13 @@
 }
 
 .btn-primary {
-  background: linear-gradient(180deg, #3d342a, #2a231b);
-  color: #f6f0e4;
+  background: linear-gradient(180deg, var(--btn-face), var(--btn-face-2));
+  color: var(--btn-ink);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: linear-gradient(180deg, #4a3f32, #322a21);
+  background: linear-gradient(180deg, var(--btn-face-hover), var(--btn-face-2-hover));
 }
 
 .btn-primary:disabled {
@@ -115,19 +115,49 @@
   cursor: not-allowed;
 }
 
-@media (prefers-color-scheme: dark) {
-  .btn-primary {
-    background: linear-gradient(180deg, #d8cfbc, #b9ae98);
-    color: #1a1713;
-  }
-  .btn-primary:hover:not(:disabled) {
-    background: linear-gradient(180deg, #e6ddca, #c7bca6);
-  }
-}
-
 .caret {
   font-size: 10px;
   opacity: 0.7;
+}
+
+/* --------------------------------------------------------------- theme pick */
+
+.theme {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--rule);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--paper) 55%, transparent);
+}
+
+.theme-btn {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 26px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: background 0.14s, color 0.14s;
+}
+
+.theme-btn:hover {
+  color: var(--ink);
+  background: var(--gold-soft);
+}
+
+.theme-btn-on {
+  color: var(--btn-ink);
+  background: linear-gradient(180deg, var(--btn-face), var(--btn-face-2));
+}
+
+.theme-btn-on:hover {
+  color: var(--btn-ink);
+  background: linear-gradient(180deg, var(--btn-face-hover), var(--btn-face-2-hover));
 }
 
 /* ------------------------------------------------------------- examples menu */
@@ -272,8 +302,38 @@
 }
 
 .sheet-foot {
-  justify-content: center;
-  padding: 0 clamp(28px, 6%, 68px) 20px;
+  position: sticky;
+  bottom: 0;
+  z-index: 12;
+  gap: 10px;
+  padding: 11px clamp(28px, 6%, 68px);
+  border-top: 1px solid var(--rule-soft);
+  /* Full sheet width, not inset, so text scrolling underneath is masked. */
+  background: color-mix(in srgb, var(--paper) 93%, transparent);
+  backdrop-filter: blur(7px);
+  border-radius: 0 0 10px 3px;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.foot-hint {
+  margin-left: auto;
+  font-size: 11.5px;
+  color: var(--ink-soft);
+}
+
+.foot-hint kbd {
+  font-family: var(--sans);
+  font-size: 10.5px;
+  border: 1px solid var(--rule);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+/* The page's own buttons sit a little tighter than chrome buttons would. */
+.sheet-foot .btn {
+  padding: 7px 16px;
 }
 
 .sheet-head-count {
@@ -291,8 +351,9 @@
 
 .ornament {
   color: var(--ink-soft);
-  opacity: 0.45;
-  font-size: 15px;
+  opacity: 0.4;
+  font-size: 14px;
+  flex: none;
 }
 
 /* ----------------------------------------------------------------- page text */
@@ -497,6 +558,18 @@
   margin: 0;
 }
 
+.popover-secondary {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+
+.popover-hedge {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
 .popover-title {
   margin: 0;
   font-weight: 600;
@@ -557,18 +630,12 @@
   font-size: 12.5px;
   font-weight: 600;
   cursor: pointer;
-  color: var(--paper);
+  color: var(--on-tier);
   background: var(--tier);
 }
 
 .btn-apply:hover {
   filter: brightness(1.1);
-}
-
-@media (prefers-color-scheme: dark) {
-  .btn-apply {
-    color: #17140f;
-  }
 }
 
 .popover-analysis summary {
@@ -949,6 +1016,14 @@
 }
 
 @media (max-width: 560px) {
+  .foot-hint {
+    display: none;
+  }
+
+  .sheet-foot {
+    justify-content: flex-end;
+  }
+
   .deskbar {
     flex-wrap: wrap;
   }

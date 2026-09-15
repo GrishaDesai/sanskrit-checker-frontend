@@ -3,6 +3,7 @@ import "./App.css";
 import { BookPage } from "./components/BookPage";
 import { ExamplesMenu } from "./components/ExamplesMenu";
 import { MarginNotes } from "./components/MarginNotes";
+import { ThemeToggle } from "./components/ThemeToggle";
 import { indexSyntaxIssues, isFinding, kindOf, locateTokens } from "./lib/findings";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
@@ -175,32 +176,24 @@ export default function App() {
 
   return (
     <div className="desk">
+      {/*
+        The bar carries identity and settings only. The things that act on the
+        manuscript live on the manuscript, at the foot of the sheet.
+      */}
       <header className="deskbar">
         <div className="brand">
           <span lang="sa" className="brand-mark">
-            शो
+            सं
           </span>
           <span className="brand-text">
-            <strong>Sanskrit Proof-Checker</strong>
-            <span lang="sa">संस्कृत-शोधकः</span>
+            <strong lang="sa">संस्कृतपरीक्षक</strong>
+            <span>Sanskrit proof-checker</span>
           </span>
         </div>
 
         <div className="deskbar-actions">
           <ExamplesMenu samples={SAMPLE_TEXTS} tagLabels={TAG_LABELS} onPick={pickSample} />
-          {mode === "proof" && (
-            <button type="button" className="btn btn-quiet" onClick={() => setResult(null)}>
-              Edit text
-            </button>
-          )}
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={() => void runCheck()}
-            disabled={loading || !text.trim()}
-          >
-            {loading ? "Checking…" : mode === "proof" ? "Check again" : "Check"}
-          </button>
+          <ThemeToggle />
         </div>
       </header>
 
@@ -224,6 +217,10 @@ export default function App() {
           onSelectWord={setSelectedIndex}
           onApply={applySuggestion}
           onClose={() => setSelectedIndex(null)}
+          onCheck={() => void runCheck()}
+          onEdit={() => setResult(null)}
+          loading={loading}
+          canCheck={Boolean(text.trim())}
           runningHead={runningHead}
         />
 

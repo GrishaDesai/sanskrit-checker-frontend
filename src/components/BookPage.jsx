@@ -19,6 +19,10 @@ export function BookPage({
   onSelectWord,
   onApply,
   onClose,
+  onCheck,
+  onEdit,
+  loading,
+  canCheck,
   runningHead,
 }) {
   const bodyRef = useRef(null)
@@ -85,6 +89,14 @@ export function BookPage({
             className="page-text page-input"
             value={text}
             onChange={(e) => onTextChange(e.target.value)}
+            // Hands stay on the keyboard: the writer never has to travel to
+            // the button to find out what it thinks.
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault()
+                onCheck()
+              }
+            }}
             spellCheck={false}
             placeholder="Write or paste your Devanagari text here…"
           />
@@ -121,8 +133,35 @@ export function BookPage({
         )}
       </div>
 
-      <footer className="sheet-foot" aria-hidden>
-        <span className="ornament">❦</span>
+      {/*
+        The actions belong to the page, not to the application chrome. An
+        author finishes a sentence and reaches for Check right where they
+        stopped typing, so the bar is docked to the foot of the sheet and made
+        sticky -- on a long manuscript it rides the bottom of the viewport
+        instead of retreating to a corner of the window.
+      */}
+      <footer className="sheet-foot">
+        <span className="ornament" aria-hidden>
+          ❦
+        </span>
+
+        <span className="foot-hint" aria-hidden>
+          <kbd>Ctrl</kbd> + <kbd>Enter</kbd>
+        </span>
+
+        {mode === 'proof' && (
+          <button type="button" className="btn btn-quiet" onClick={onEdit}>
+            Edit text
+          </button>
+        )}
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={onCheck}
+          disabled={loading || !canCheck}
+        >
+          {loading ? 'Checking…' : mode === 'proof' ? 'Check again' : 'Check'}
+        </button>
       </footer>
     </div>
   )

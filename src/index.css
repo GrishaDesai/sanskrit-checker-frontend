@@ -1,36 +1,56 @@
 /* Base layer: design tokens, resets and the Devanagari type stack.
    Everything visual that is not specific to a component lives here. */
 
+/*
+ * Each token is written once, with both of its values, and `color-scheme`
+ * decides which one applies. That is what lets the theme control work: a
+ * duplicated `@media (prefers-color-scheme: dark)` block can only ever follow
+ * the operating system, and nothing the reader clicks can overrule it.
+ */
 :root {
   /* --- the desk and the paper on it --------------------------------- */
-  --desk: #e7e1d4;
-  --desk-sheen: rgba(255, 255, 255, 0.5);
-  --paper: #fbf8f1;
-  --paper-edge: #efe8d7;
-  --rule: #e2dac7;
-  --rule-soft: #ece5d5;
+  --desk: light-dark(#e7e1d4, #0e0d0c);
+  --desk-sheen: light-dark(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.03));
+  --paper: light-dark(#fbf8f1, #201d19);
+  --paper-edge: light-dark(#efe8d7, #2e2a23);
+  --rule: light-dark(#e2dac7, #34302a);
+  --rule-soft: light-dark(#ece5d5, #2a2722);
 
-  --ink: #2b2620;
-  --ink-mid: #5d554a;
-  --ink-soft: #8b8172;
-  --gold: #9a6b2f;
-  --gold-soft: rgba(154, 107, 47, 0.12);
+  --ink: light-dark(#2b2620, #e9e3d6);
+  --ink-mid: light-dark(#5d554a, #b3ab9c);
+  --ink-soft: light-dark(#8b8172, #8a8274);
+  --gold: light-dark(#9a6b2f, #cf9c56);
+  --gold-soft: light-dark(rgba(154, 107, 47, 0.12), rgba(207, 156, 86, 0.16));
 
   /* --- finding colours ---------------------------------------------- */
-  --mark-word: #b02020;
-  --mark-word-bg: rgba(176, 32, 32, 0.1);
-  --mark-sandhi: #a85e08;
-  --mark-sandhi-bg: rgba(168, 94, 8, 0.11);
-  --mark-syntax: #6b28c9;
-  --mark-syntax-bg: rgba(107, 40, 201, 0.1);
-  --mark-review: #7b8794;
-  --mark-review-bg: rgba(123, 135, 148, 0.08);
-  --mark-ok: #2f7d51;
+  --mark-word: light-dark(#b02020, #f08a86);
+  --mark-word-bg: light-dark(rgba(176, 32, 32, 0.1), rgba(240, 138, 134, 0.14));
+  --mark-sandhi: light-dark(#a85e08, #e5a94f);
+  --mark-sandhi-bg: light-dark(rgba(168, 94, 8, 0.11), rgba(229, 169, 79, 0.14));
+  --mark-syntax: light-dark(#6b28c9, #bfa5f5);
+  --mark-syntax-bg: light-dark(rgba(107, 40, 201, 0.1), rgba(191, 165, 245, 0.14));
+  --mark-review: light-dark(#7b8794, #9aa3ad);
+  --mark-review-bg: light-dark(rgba(123, 135, 148, 0.08), rgba(154, 163, 173, 0.1));
+  --mark-ok: light-dark(#2f7d51, #6fbf8e);
+  /* Text laid on a filled tier colour -- the Replace button, chiefly. */
+  --on-tier: light-dark(#fbf8f1, #17140f);
 
-  --shadow-sheet:
-    0 1px 2px rgba(56, 44, 24, 0.08), 0 12px 28px -10px rgba(56, 44, 24, 0.28);
-  --shadow-pop:
-    0 2px 4px rgba(40, 32, 18, 0.1), 0 16px 32px -12px rgba(40, 32, 18, 0.42);
+  /* Shadows are not colours, so only their tints can switch; the geometry is
+     shared and lives in the composed values below. */
+  --shadow-near: light-dark(rgba(56, 44, 24, 0.08), rgba(0, 0, 0, 0.5));
+  --shadow-far: light-dark(rgba(56, 44, 24, 0.28), rgba(0, 0, 0, 0.7));
+  --shadow-pop-near: light-dark(rgba(40, 32, 18, 0.1), rgba(0, 0, 0, 0.5));
+  --shadow-pop-far: light-dark(rgba(40, 32, 18, 0.42), rgba(0, 0, 0, 0.75));
+
+  --shadow-sheet: 0 1px 2px var(--shadow-near), 0 13px 29px -10px var(--shadow-far);
+  --shadow-pop: 0 2px 5px var(--shadow-pop-near), 0 17px 34px -12px var(--shadow-pop-far);
+
+  /* The primary button inverts against the desk, so both of its faces flip. */
+  --btn-face: light-dark(#3d342a, #d8cfbc);
+  --btn-face-2: light-dark(#2a231b, #b9ae98);
+  --btn-face-hover: light-dark(#4a3f32, #e6ddca);
+  --btn-face-2-hover: light-dark(#322a21, #c7bca6);
+  --btn-ink: light-dark(#f6f0e4, #1a1713);
 
   --sans: ui-sans-serif, system-ui, 'Segoe UI', Roboto, sans-serif;
   --mono: ui-monospace, 'Cascadia Mono', Consolas, monospace;
@@ -41,6 +61,7 @@
     'Noto Serif Devanagari', 'Sanskrit Text', 'Nirmala UI', 'Kokila',
     'Devanagari MT', 'Noto Sans Devanagari', serif;
 
+  /* No stamped attribute means "follow the system", which is the default. */
   color-scheme: light dark;
   font: 16px/1.5 var(--sans);
   color: var(--ink);
@@ -50,36 +71,14 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --desk: #0e0d0c;
-    --desk-sheen: rgba(255, 255, 255, 0.03);
-    --paper: #201d19;
-    --paper-edge: #2e2a23;
-    --rule: #34302a;
-    --rule-soft: #2a2722;
+/* An explicit choice pins the scheme, and every `light-dark()` above resolves
+   to that side -- including the form controls the browser paints itself. */
+:root[data-theme='light'] {
+  color-scheme: light;
+}
 
-    --ink: #e9e3d6;
-    --ink-mid: #b3ab9c;
-    --ink-soft: #8a8274;
-    --gold: #cf9c56;
-    --gold-soft: rgba(207, 156, 86, 0.16);
-
-    --mark-word: #f08a86;
-    --mark-word-bg: rgba(240, 138, 134, 0.14);
-    --mark-sandhi: #e5a94f;
-    --mark-sandhi-bg: rgba(229, 169, 79, 0.14);
-    --mark-syntax: #bfa5f5;
-    --mark-syntax-bg: rgba(191, 165, 245, 0.14);
-    --mark-review: #9aa3ad;
-    --mark-review-bg: rgba(154, 163, 173, 0.1);
-    --mark-ok: #6fbf8e;
-
-    --shadow-sheet:
-      0 1px 2px rgba(0, 0, 0, 0.5), 0 14px 30px -10px rgba(0, 0, 0, 0.7);
-    --shadow-pop:
-      0 2px 6px rgba(0, 0, 0, 0.5), 0 18px 36px -12px rgba(0, 0, 0, 0.75);
-  }
+:root[data-theme='dark'] {
+  color-scheme: dark;
 }
 
 * {

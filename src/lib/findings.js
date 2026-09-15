@@ -56,20 +56,34 @@ export function locateTokens(text, tokens) {
  * language of an error -- an unrecognised word is far more often a proper noun,
  * a compound or a technical term than a mistake.
  */
+const SYNTAX_STATUSES = new Set(['karaka_error', 'upapada_error', 'agreement_error'])
+
 export function kindOf(token) {
   if (token.status === 'valid') return 'ok'
   if (token.severity === 'review') return 'review'
   if (token.status === 'sandhi_error') return 'sandhi'
-  if (
-    token.status === 'karaka_error' ||
-    token.status === 'upapada_error' ||
-    token.status === 'agreement_error'
-  )
-    return 'syntax'
+  if (SYNTAX_STATUSES.has(token.status)) return 'syntax'
   return 'word'
 }
 
 export const isFinding = (token) => kindOf(token) !== 'ok'
+
+/**
+ * Why a `review` token was offered, which is *not* what tier it belongs to.
+ *
+ * Collapsing every review-severity token into one tier is deliberate (see
+ * `kindOf`) -- all of them are offered rather than asserted, and they must look
+ * alike. But they are offered for three unrelated reasons, and `severity` alone
+ * cannot tell them apart: a word the lexicon does not carry, a junction left
+ * unfused, and a syntactic reading the backend is not certain enough to assert.
+ * Reading the tier as if it meant only the first silently discards the sentence
+ * the backend already wrote for the other two.
+ */
+export function reviewReason(token) {
+  if (SYNTAX_STATUSES.has(token.status)) return 'syntax'
+  if (token.status === 'sandhi_error') return 'sandhi'
+  return 'lexicon'
+}
 
 /** How each tier introduces itself, in the margin and at the popover's head. */
 export const KIND_META = {
@@ -85,12 +99,16 @@ export function summarize(token) {
   const kind = kindOf(token)
   if (kind === 'ok') return token.lemma ? `Stem ${token.lemma}` : 'Valid form'
   if (kind === 'review') {
-    // The backend's own sentence says which junction it noticed, which is more
-    // use in the margin than a generic line repeated down the column.
-    if (token.status === 'sandhi_error') {
-      return token.sandhi_issue || 'Sandhi left unapplied — often a deliberate choice'
+    // The backend's own sentence says what it noticed, which is more use in the
+    // margin than a generic line repeated down the column.
+    switch (reviewReason(token)) {
+      case 'sandhi':
+        return token.sandhi_issue || 'Sandhi left unapplied — often a deliberate choice'
+      case 'syntax':
+        return token.karaka_issue || KIND_META.syntax.note
+      default:
+        return 'Not in the lexicon; may be a name or technical term'
     }
-    return 'Not in the lexicon; may be a name or technical term'
   }
   return (
     token.sandhi_issue ||
