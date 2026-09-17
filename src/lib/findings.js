@@ -73,15 +73,17 @@ export const isFinding = (token) => kindOf(token) !== 'ok'
  *
  * Collapsing every review-severity token into one tier is deliberate (see
  * `kindOf`) -- all of them are offered rather than asserted, and they must look
- * alike. But they are offered for three unrelated reasons, and `severity` alone
+ * alike. But they are offered for unrelated reasons, and `severity` alone
  * cannot tell them apart: a word the lexicon does not carry, a junction left
- * unfused, and a syntactic reading the backend is not certain enough to assert.
- * Reading the tier as if it meant only the first silently discards the sentence
- * the backend already wrote for the other two.
+ * unfused, a compound whose form breaks a samāsa rule, and a syntactic reading
+ * the backend is not certain enough to assert. Reading the tier as if it meant
+ * only the first silently discards the sentence the backend already wrote for
+ * the others.
  */
 export function reviewReason(token) {
   if (SYNTAX_STATUSES.has(token.status)) return 'syntax'
   if (token.status === 'sandhi_error') return 'sandhi'
+  if (token.status === 'samasa_error') return 'samasa'
   return 'lexicon'
 }
 
@@ -106,6 +108,14 @@ export function summarize(token) {
         return token.sandhi_issue || 'Sandhi left unapplied — often a deliberate choice'
       case 'syntax':
         return token.karaka_issue || KIND_META.syntax.note
+      case 'samasa':
+        // The backend's sentence is written for the popover and runs long; the
+        // margin only needs the rule's outcome. It names no compound type:
+        // several rules share this status, and each may not apply if the
+        // compound is of another type -- the popover says which.
+        return token.suggestion
+          ? `Compound form: possibly ${token.suggestion}`
+          : token.samasa_issue || 'Compound form may not follow its samāsa rule'
       default:
         return 'Not in the lexicon; may be a name or technical term'
     }

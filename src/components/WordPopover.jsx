@@ -60,12 +60,14 @@ export function WordPopover({ anchor, token, syntaxIssue, onApply, onClose }) {
   // finding the tier and title do not match.
   const primaryNote =
     (reason === 'sandhi' ? token.sandhi_issue : null) ||
+    (reason === 'samasa' ? token.samasa_issue : null) ||
     syntaxIssue?.description ||
     token.karaka_issue ||
     token.sandhi_issue ||
+    token.samasa_issue ||
     meta.note
   const secondaryNote =
-    token.sandhi_issue && token.sandhi_issue !== primaryNote ? token.sandhi_issue : null
+    [token.sandhi_issue, token.samasa_issue].find((note) => note && note !== primaryNote) ?? null
 
   return (
     <div
