@@ -1,10 +1,13 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
 import { BookPage } from "./components/BookPage";
+import { AttachButton } from "./components/AttachButton";
 import { ExamplesMenu } from "./components/ExamplesMenu";
 import { MarginNotes } from "./components/MarginNotes";
 import { ThemeToggle } from "./components/ThemeToggle";
+import { checkDocument } from "./lib/checkDocument";
 import { indexSyntaxIssues, isFinding, kindOf, locateTokens } from "./lib/findings";
+import { readDocument } from "./lib/readDocument";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
@@ -43,6 +46,11 @@ export default function App() {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(null);
+  const [progress, setProgress] = useState(null);
+  const [fileName, setFileName] = useState(null);
+  // A long document is still checking when the author edits or starts over;
+  // the stale sections are cancelled so their results cannot land late.
+  const inFlight = useRef(null);
 
   // The proofed page shows the text the *server* saw. Editing after a check
   // would slide every offset, so any edit drops back to composing rather than
@@ -53,31 +61,35 @@ export default function App() {
     async (textToCheck) => {
       const body = textToCheck ?? text;
       if (!body.trim()) return;
+      inFlight.current?.abort();
+      const controller = new AbortController();
+      inFlight.current = controller;
       setLoading(true);
       setError(null);
       setSelectedIndex(null);
       try {
-        const res = await fetch(`${API_URL}/api/check`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: body }),
+        const checked = await checkDocument(API_URL, body, {
+          signal: controller.signal,
+          onProgress: (done, total) => setProgress(total > 1 ? { done, total } : null),
         });
-        if (!res.ok) {
-          const detail = await res.json().catch(() => ({}));
-          throw new Error(detail.detail || `Request failed (${res.status})`);
-        }
-        setResult(await res.json());
+        setResult(checked);
       } catch (err) {
+        if (err.name === "AbortError") return;
         setError(err.message || "Something went wrong reaching the API.");
         setResult(null);
       } finally {
-        setLoading(false);
+        if (inFlight.current === controller) {
+          inFlight.current = null;
+          setLoading(false);
+          setProgress(null);
+        }
       }
     },
     [text],
   );
 
   const editText = useCallback((next) => {
+    inFlight.current?.abort();
     setText(next);
     setResult(null);
     setSelectedIndex(null);
@@ -85,8 +97,26 @@ export default function App() {
 
   const pickSample = useCallback(
     (sampleText) => {
+      setFileName(null);
       setText(sampleText);
       void runCheck(sampleText);
+    },
+    [runCheck],
+  );
+
+  /** Read an attached manuscript onto the page and check it straight away. */
+  const openFile = useCallback(
+    async (file) => {
+      setError(null);
+      try {
+        const contents = await readDocument(file);
+        if (!contents) throw new Error(`${file.name} has no text in it.`);
+        setFileName(file.name);
+        setText(contents);
+        void runCheck(contents);
+      } catch (err) {
+        setError(err.message);
+      }
     },
     [runCheck],
   );
@@ -163,16 +193,20 @@ export default function App() {
   }, [selectedIndex]);
 
   const runningHead = useMemo(() => {
-    if (mode === "compose") return { title: "Draft", detail: "Not yet checked" };
+    const title = fileName ?? "Draft";
+    if (progress) {
+      return { title, detail: `Checked ${progress.done} of ${progress.total} sections…` };
+    }
+    if (mode === "compose") return { title, detail: "Not yet checked" };
     const words = result.token_count;
     const n = findings.length;
     return {
-      title: "Proofed",
+      title: fileName ?? "Proofed",
       detail: `${words} word${words === 1 ? "" : "s"} · ${
         n === 0 ? "nothing marked" : `${n} marked`
       }`,
     };
-  }, [mode, result, findings]);
+  }, [mode, result, findings, fileName, progress]);
 
   return (
     <div className="desk">
@@ -192,6 +226,7 @@ export default function App() {
         </div>
 
         <div className="deskbar-actions">
+          <AttachButton onFile={openFile} disabled={loading} />
           <ExamplesMenu samples={SAMPLE_TEXTS} tagLabels={TAG_LABELS} onPick={pickSample} />
           <ThemeToggle />
         </div>
@@ -211,6 +246,7 @@ export default function App() {
           text={mode === "proof" ? result.input_text : text}
           mode={mode}
           onTextChange={editText}
+          onDropFile={openFile}
           placements={placements}
           syntaxIssues={syntaxIssues}
           selectedIndex={selectedIndex}
