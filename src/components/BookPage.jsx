@@ -13,6 +13,7 @@ export function BookPage({
   text,
   mode,
   onTextChange,
+  onDropFile,
   placements,
   syntaxIssues,
   selectedIndex,
@@ -28,6 +29,7 @@ export function BookPage({
   const bodyRef = useRef(null)
   const wordRefs = useRef(new Map())
   const [anchor, setAnchor] = useState(null)
+  const [dragging, setDragging] = useState(false)
 
   const selected =
     selectedIndex != null ? placements?.find((p) => p.index === selectedIndex) : null
@@ -74,7 +76,25 @@ export function BookPage({
   }, [])
 
   return (
-    <div className="sheet">
+    <div
+      className={`sheet${dragging ? ' sheet-drop' : ''}`}
+      // A file can be dropped on the page in either mode; it replaces the text.
+      onDragOver={(e) => {
+        if (!e.dataTransfer.types.includes('Files')) return
+        e.preventDefault()
+        setDragging(true)
+      }}
+      onDragLeave={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) setDragging(false)
+      }}
+      onDrop={(e) => {
+        const file = e.dataTransfer.files?.[0]
+        if (!file) return
+        e.preventDefault()
+        setDragging(false)
+        onDropFile(file)
+      }}
+    >
       <div className="sheet-spine" aria-hidden />
 
       <header className="sheet-head">
@@ -98,7 +118,7 @@ export function BookPage({
               }
             }}
             spellCheck={false}
-            placeholder="Write or paste your Devanagari text here…"
+            placeholder="Write or paste your Devanagari text here, or drop a .docx or .txt file…"
           />
         ) : (
           <article lang="sa" className="page-text page-proof">

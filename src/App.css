@@ -1050,3 +1050,15 @@
     transform: none;
   }
 }
+
+/* ----------------------------------------------------------------- file drop */
+
+.sheet-drop {
+  outline: 2px dashed var(--gold);
+  outline-offset: 6px;
+}
+
+.btn-quiet:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
