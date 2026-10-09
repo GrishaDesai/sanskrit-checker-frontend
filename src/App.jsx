@@ -22,6 +22,8 @@ const SAMPLE_TEXTS = [
   { label: "देवस्य नमः।", text: "देवस्य नमः।", tag: "upapada" },
   { label: "देवाय नमः।", text: "देवाय नमः।", tag: "" },
   { label: "राजपुरुषः वनम् गच्छति।", text: "राजपुरुषः वनम् गच्छति।", tag: "compound" },
+  { label: "गणिकादुहितरम् पश्यति।", text: "गणिकादुहितरम् पश्यति।", tag: "split" },
+  { label: "परिणामलक्षणा।", text: "परिणामलक्षणा।", tag: "split" },
 ];
 
 const TAG_LABELS = {
@@ -32,6 +34,7 @@ const TAG_LABELS = {
   agreement: "Agreement",
   upapada: "Upapada",
   compound: "Compound",
+  split: "Split",
 };
 
 /** Loudest first, so the margin's tally reads as a triage order. */
@@ -43,11 +46,32 @@ export default function App() {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(null);
+  const [scholar, setScholar] = useState(null);
 
   // The proofed page shows the text the *server* saw. Editing after a check
   // would slide every offset, so any edit drops back to composing rather than
   // leaving marks sitting on the wrong words.
   const mode = result ? "proof" : "compose";
+
+  useEffect(() => {
+    let stop = false;
+    const tick = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/health`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!stop) setScholar(data.scholar ?? null);
+      } catch {
+        if (!stop) setScholar(null);
+      }
+    };
+    void tick();
+    const id = setInterval(tick, scholar === "ready" ? 30000 : 4000);
+    return () => {
+      stop = true;
+      clearInterval(id);
+    };
+  }, [scholar]);
 
   const runCheck = useCallback(
     async (textToCheck) => {
@@ -198,6 +222,15 @@ export default function App() {
       </header>
 
       {error && <div className="banner banner-error">⚠ {error}</div>}
+
+      {scholar === "loading" && (
+        <div className="banner banner-warn">
+          The scholar model is loading. A check uses the grammar engine until it is ready.
+        </div>
+      )}
+      {scholar === "failed" && (
+        <div className="banner banner-error">The scholar model could not load.</div>
+      )}
 
       {mode === "proof" && placements === null && (
         <div className="banner banner-warn">

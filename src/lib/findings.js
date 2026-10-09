@@ -84,6 +84,7 @@ export function reviewReason(token) {
   if (SYNTAX_STATUSES.has(token.status)) return 'syntax'
   if (token.status === 'sandhi_error') return 'sandhi'
   if (token.status === 'samasa_error') return 'samasa'
+  if (token.rule === 'Qwen') return 'scholar'
   return 'lexicon'
 }
 
@@ -108,7 +109,18 @@ export function summarize(token) {
         return token.sandhi_issue || 'Sandhi left unapplied — often a deliberate choice'
       case 'syntax':
         return token.karaka_issue || KIND_META.syntax.note
-      case 'samasa':
+      case 'scholar':
+        return token.karaka_issue || (token.suggestion ? `Scholar → ${token.suggestion}` : 'Scholar note')
+      case 'samasa': {
+        // A segmenter split is a review note, not a samāsa-rule correction.
+        // The margin only needs the pieces; the popover keeps the full sentence.
+        const correct = token.samasa_issue?.match(/^Correctly fused as (.+?)\./)
+        if (correct) return `Correctly fused: ${correct[1]}`
+        if (token.samasa_issue?.startsWith('Incorrectly fused')) {
+          return token.suggestion
+            ? `Incorrectly fused → ${token.suggestion}`
+            : 'Incorrectly fused'
+        }
         // The backend's sentence is written for the popover and runs long; the
         // margin only needs the rule's outcome. It names no compound type:
         // several rules share this status, and each may not apply if the
@@ -116,6 +128,7 @@ export function summarize(token) {
         return token.suggestion
           ? `Compound form: possibly ${token.suggestion}`
           : token.samasa_issue || 'Compound form may not follow its samāsa rule'
+      }
       default:
         return 'Not in the lexicon; may be a name or technical term'
     }

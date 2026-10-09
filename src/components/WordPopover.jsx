@@ -100,6 +100,15 @@ export function WordPopover({ anchor, token, syntaxIssue, onApply, onClose }) {
           <p className="popover-title">{syntaxIssue.title}</p>
         )}
 
+        {reason === 'scholar' && <p className="popover-title">Scholar</p>}
+
+        {reason === 'samasa' && token.samasa_issue?.startsWith('Correctly fused') && (
+          <p className="popover-title">Correctly fused</p>
+        )}
+        {reason === 'samasa' && token.samasa_issue?.startsWith('Incorrectly fused') && (
+          <p className="popover-title">Incorrectly fused</p>
+        )}
+
         {reason === 'lexicon' ? (
           <p className="popover-note">
             Not listed in the lexicon. Compounds, sandhi-fused pairs, proper nouns
